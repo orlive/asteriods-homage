@@ -7,6 +7,8 @@
 #ifndef GAMEWORLD_DEFINE
 #define GAMEWORLD_DEFINE
 
+#include "vector.h"
+
 typedef struct /* GAMEWORLD */ {
 
   struct /* time */ {
@@ -25,7 +27,7 @@ typedef struct /* GAMEWORLD */ {
   } display;
 
   struct /*ship */ { 
-    int   size       = 25;
+    float size       = 25.0f;
     float resistance = 0.5f;
     int   laser_wait = 200;
     int   wait_viable= 3000;
@@ -80,32 +82,27 @@ typedef struct /* GAMEWORLD */ {
     }
   }
   
-  void adjustBoundaries( int& x , int& y ) {
-    while ( x > display.width  ) { x-=display.width;  };
-    while ( x < 0              ) { x+=display.width;  };
-    while ( y > display.height ) { y-=display.height; };
-    while ( y < 0              ) { y+=display.height; };
+  void adjustBoundaries( POINT& pos ) {
+    while ( pos.x > display.width  ) { pos.x-=display.width;  };
+    while ( pos.x < 0              ) { pos.x+=display.width;  };
+    while ( pos.y > display.height ) { pos.y-=display.height; };
+    while ( pos.y < 0              ) { pos.y+=display.height; };
   }
 
-  void adjustBoundaries( float& x , float& y ) {
-    while ( x > display.width  ) { x-=display.width;  };
-    while ( x < 0              ) { x+=display.width;  };
-    while ( y > display.height ) { y-=display.height; };
-    while ( y < 0              ) { y+=display.height; };
-  }
-
-  void processArguments( int argc , char* argv[] ) {
+  bool haveOption( const char option , int argc , char* argv[] ) {
     for ( int i=1 ; i<argc ; i++ ) {
       char*p = argv[i];
       if ( *p!='-' ) continue;
       if ( *(++p)=='-' ) p++;
-      switch( *p ) {
-        case 'd' :
-        case 'v' : debug          = true; break;
-        case 'b' : display.bold   = false; break;
-        case 'm' : display.mirror = false; break;
-      }
+      if ( *p == option ) return true;
     }
+    return false;
+  }
+
+  void processArguments( int argc , char* argv[] ) {
+    debug          = haveOption( 'd' , argc, argv ) || haveOption( 'v' , argc, argv );
+    display.bold   = ! haveOption( 'b' , argc, argv );
+    display.mirror = ! haveOption( 'm' , argc, argv );
   }
 
 } GAMEWORLD;

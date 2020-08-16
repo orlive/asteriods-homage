@@ -17,17 +17,17 @@ force::~force() {
   }
 }
 
-void force::calcCombinedOffsets( float& xAdd,float& yAdd ) {
-  calcOffsets(xAdd,yAdd);
-  m_combinedX += xAdd;
-  m_combinedY += yAdd;
-  xAdd = m_combinedX;
-  yAdd = m_combinedY;
+void force::calcCombinedOffsets( POINT& add ) {
+  calcOffsets( add );
+  m_combined.x += add.x;
+  m_combined.y += add.y;
+  add.x = m_combined.x;
+  add.y = m_combined.y;
 }
 
-void force::calcOffsets( float& xAdd,float& yAdd ) {
-  xAdd = gameWorld.time.timeFactor * m_x;
-  yAdd = gameWorld.time.timeFactor * m_y;
+void force::calcOffsets( POINT& add ) {
+  add.x = gameWorld.time.timeFactor * m_position.x;
+  add.y = gameWorld.time.timeFactor * m_position.y;
 }
 
 void force::slowDown() {
@@ -40,6 +40,6 @@ void force::slowDown() {
     stop();
   } else {
     float bm = bogenmass(deg);
-    setXY( + size * std::sin(bm) , - size * std::cos(bm) );
+    setPosition( { + size * std::sin(bm) , - size * std::cos(bm) } );
   }
 }

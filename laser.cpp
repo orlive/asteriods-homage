@@ -2,18 +2,18 @@
 #include "laser.h"
 
 laser::laser( float x,float y,float degree ) {
-  addToPolygon(0,-gameWorld.ship.size/2); // TODO : use SHIP-SIZE
-  addToPolygon(0,-gameWorld.ship.size/2 - gameWorld.laser.size);
+  addToPolygon( { 0,-gameWorld.ship.size/2 } ); 
+  addToPolygon( { 0,-gameWorld.ship.size/2 - gameWorld.laser.size } );
 
-  m_x = x;
-  m_y = y;
+  m_position.x = x;
+  m_position.y = y;
   m_force.add(degree,gameWorld.laser.speed);
 
   float bm = bogenmass(degree);
 
-  for ( int i=0 ; i<m_polygonX.size() ; i++ ) {
-    m_transformedX.push_back( m_polygonX[i]*std::cos(bm) - m_polygonY[i]*std::sin(bm) + x );
-    m_transformedY.push_back( m_polygonX[i]*std::sin(bm) + m_polygonY[i]*std::cos(bm) + y );
+  for ( int i=0 ; i<m_polygon.size() ; i++ ) {
+    m_transformed.push_back( { m_polygon[i].x*std::cos(bm) - m_polygon[i].y*std::sin(bm) + x ,
+                               m_polygon[i].x*std::sin(bm) + m_polygon[i].y*std::cos(bm) + y } );
   }
 
   m_timeToDie = SDL_GetTicks() + gameWorld.laser.lifespan;
@@ -30,23 +30,21 @@ int laser::degree() {
 }
 
 void laser::render( SDL_Renderer *renderer ) {
-  float xAdd = 0;
-  float yAdd = 0;
+  POINT add = { 0.0f , 0.0f };
 
-  m_force.calcOffsets(xAdd,yAdd);
+  m_force.calcOffsets( add );
 
-  int oldX = m_x;
-  int oldY = m_y;
+  POINT oldPosition = m_position;
+  
+  m_position.x += add.x;
+  m_position.y += add.y;
 
-  m_x += xAdd;
-  m_y += yAdd;
+  gameWorld.adjustBoundaries( m_position );
 
-  gameWorld.adjustBoundaries( m_x,m_y );
-
-  for ( int i=0 ; i<m_polygonX.size() ; i++ ) {
-    m_transformedX[i] = m_transformedX[i] - oldX + m_x;
-    m_transformedY[i] = m_transformedY[i] - oldY + m_y;
+  for ( int i=0 ; i<m_polygon.size() ; i++ ) {
+    m_transformed[i].x = m_transformed[i].x - oldPosition.x + m_position.x;
+    m_transformed[i].y = m_transformed[i].y - oldPosition.y + m_position.y;
   }
 
-  drawObjectWithMirrors( renderer,m_transformedX,m_transformedY );
+  drawObjectWithMirrors( renderer,m_transformed );
 }

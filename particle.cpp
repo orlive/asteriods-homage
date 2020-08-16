@@ -2,8 +2,8 @@
 #include "particle.h"
 
 particle::particle( int x,int y,float randomPositionOffset,float speedStart,float speedEnd,float degreeStart,float degreeEnd ) {
-  m_x = x + randomf( -randomPositionOffset/2,randomPositionOffset/2 );
-  m_y = y + randomf( -randomPositionOffset/2,randomPositionOffset/2 );
+  m_position.x = x + randomf( -randomPositionOffset/2,randomPositionOffset/2 );
+  m_position.y = y + randomf( -randomPositionOffset/2,randomPositionOffset/2 );
 
   float r = randomf(degreeStart,degreeEnd);
 
@@ -18,18 +18,17 @@ particle::~particle() {
 }
 
 void particle::move() {
-  float xAdd = 0;
-  float yAdd = 0;
+  POINT add = { 0.0f , 0.0f };
 
-  m_force.calcOffsets(xAdd,yAdd);
+  m_force.calcOffsets( add );
 
-  m_x += xAdd;
-  m_y += yAdd;
+  m_position.x += add.x;
+  m_position.y += add.y;
 
-  gameWorld.adjustBoundaries( m_x,m_y );
+  gameWorld.adjustBoundaries( m_position );
 }
 
 void particle::render( SDL_Renderer *renderer ) {
   SDL_SetRenderDrawColor(renderer, 255,255,255, SDL_ALPHA_OPAQUE);
-  base::drawPointWithMirror(renderer,m_x,m_y);
+  base::drawPointWithMirror(renderer,m_position.x,m_position.y);
 }    

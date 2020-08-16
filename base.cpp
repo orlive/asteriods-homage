@@ -1,26 +1,23 @@
 #include "tools.h"
 #include "base.h"
 
-int  base::x()           { return m_x; }
-int  base::y()           { return m_y; }
+int  base::x()           { return m_position.x; }
+int  base::y()           { return m_position.y; }
 int  base::size()        { return m_size; }
 bool base::isDestroyed() { return m_destroyed; }
 
-std::vector<int>& base::transedX() { return m_transformedX; }
-std::vector<int>& base::transedY() { return m_transformedY; }
+std::vector<POINT>& base::transformed() { return m_transformed; }
 
 bool base::deceased() {
   return ( m_timeToDie==0 || gameWorld.time.lastTicks > m_timeToDie );
 }
 
 void base::clearPolygon() {
-  m_polygonX.clear();
-  m_polygonY.clear();
+  m_polygon.clear();
 }
 
-void base::addToPolygon(int x,int y) {
-  m_polygonX.push_back(x);
-  m_polygonY.push_back(y);
+void base::addToPolygon(POINT position) {
+  m_polygon.push_back(position);
 }
 
 void base::generatePosWidthMinDistance( int& x , int& y , int distance ) {
@@ -28,8 +25,8 @@ void base::generatePosWidthMinDistance( int& x , int& y , int distance ) {
     x = random(0,gameWorld.display.width);
     y = random(0,gameWorld.display.height);
 
-    int diffX = m_x - x;
-    int diffY = m_y - y;
+    int diffX = m_position.x - x;
+    int diffY = m_position.y - y;
 
     if ( std::sqrt( diffX*diffX + diffY*diffY ) >= distance ) {
       return;
@@ -37,47 +34,46 @@ void base::generatePosWidthMinDistance( int& x , int& y , int distance ) {
   }
 }
 
-void base::drawObject( SDL_Renderer *renderer , std::vector<int>& xn , std::vector<int>& yn , const int offsetX , const int offsetY ) {
-  int   s = xn.size();
-  float xDestroyed = 0;
-  float yDestroyed = 0;
+void base::drawObject( SDL_Renderer *renderer , std::vector<POINT>& xy , const int offsetX , const int offsetY ) {
+  int   s = xy.size();
+  POINT destroyed = { 0.0f , 0.0f };
   for ( int i=0 ; i<s-1 ; i++ ) {
     if ( m_destroyed ) {
-      m_destroyedForces.at(i)->calcCombinedOffsets(xDestroyed,yDestroyed);
+      m_destroyedForces.at(i)->calcCombinedOffsets( destroyed );
       m_destroyedForces.at(i)->slowDown();
     }
     if ( gameWorld.display.bold ) {
       SDL_SetRenderDrawColor(renderer, 125,125,125, 100);
-      SDL_RenderDrawLine(renderer , xn[i]+offsetX+xDestroyed   , yn[i]+offsetY+yDestroyed+1 , xn[i+1]+offsetX+xDestroyed   , yn[i+1]+offsetY+yDestroyed+1 );
-      SDL_RenderDrawLine(renderer , xn[i]+offsetX+xDestroyed+1 , yn[i]+offsetY+yDestroyed+1 , xn[i+1]+offsetX+xDestroyed+1 , yn[i+1]+offsetY+yDestroyed+1 );
-      SDL_RenderDrawLine(renderer , xn[i]+offsetX+xDestroyed+1 , yn[i]+offsetY+yDestroyed   , xn[i+1]+offsetX+xDestroyed+1 , yn[i+1]+offsetY+yDestroyed   );
+      SDL_RenderDrawLine(renderer , xy[i].x+offsetX+destroyed.x   , xy[i].y+offsetY+destroyed.y+1 , xy[i+1].x+offsetX+destroyed.x   , xy[i+1].y+offsetY+destroyed.y+1 );
+      SDL_RenderDrawLine(renderer , xy[i].x+offsetX+destroyed.x+1 , xy[i].y+offsetY+destroyed.y+1 , xy[i+1].x+offsetX+destroyed.x+1 , xy[i+1].y+offsetY+destroyed.y+1 );
+      SDL_RenderDrawLine(renderer , xy[i].x+offsetX+destroyed.x+1 , xy[i].y+offsetY+destroyed.y   , xy[i+1].x+offsetX+destroyed.x+1 , xy[i+1].y+offsetY+destroyed.y   );
     }
     SDL_SetRenderDrawColor(renderer, 255,255,255, SDL_ALPHA_OPAQUE);
-    SDL_RenderDrawLine(renderer , xn[i]+offsetX+xDestroyed   , yn[i]+offsetY+yDestroyed   , xn[i+1]+offsetX+xDestroyed   , yn[i+1]+offsetY+yDestroyed   );
+    SDL_RenderDrawLine(renderer , xy[i].x+offsetX+destroyed.x   , xy[i].y+offsetY+destroyed.y   , xy[i+1].x+offsetX+destroyed.x   , xy[i+1].y+offsetY+destroyed.y   );
   }
   if ( m_destroyed ) {
-    m_destroyedForces.at(s-1)->calcCombinedOffsets(xDestroyed,yDestroyed);
+    m_destroyedForces.at(s-1)->calcCombinedOffsets( destroyed );
     m_destroyedForces.at(s-1)->slowDown();
   }
   if ( gameWorld.display.bold ) {
     SDL_SetRenderDrawColor(renderer, 125,125,125, 100);
-    SDL_RenderDrawLine(renderer , xn[s-1]+offsetX+xDestroyed   , yn[s-1]+offsetY+yDestroyed+1 , xn[0]+offsetX+xDestroyed   , yn[0]+offsetY+yDestroyed+1 );
-    SDL_RenderDrawLine(renderer , xn[s-1]+offsetX+xDestroyed+1 , yn[s-1]+offsetY+yDestroyed+1 , xn[0]+offsetX+xDestroyed+1 , yn[0]+offsetY+yDestroyed+1 );
-    SDL_RenderDrawLine(renderer , xn[s-1]+offsetX+xDestroyed+1 , yn[s-1]+offsetY+yDestroyed   , xn[0]+offsetX+xDestroyed+1 , yn[0]+offsetY+yDestroyed   );
+    SDL_RenderDrawLine(renderer , xy[s-1].x+offsetX+destroyed.x   , xy[s-1].y+offsetY+destroyed.y+1 , xy[0].x+offsetX+destroyed.x   , xy[0].y+offsetY+destroyed.y+1 );
+    SDL_RenderDrawLine(renderer , xy[s-1].x+offsetX+destroyed.x+1 , xy[s-1].y+offsetY+destroyed.y+1 , xy[0].x+offsetX+destroyed.x+1 , xy[0].y+offsetY+destroyed.y+1 );
+    SDL_RenderDrawLine(renderer , xy[s-1].x+offsetX+destroyed.x+1 , xy[s-1].y+offsetY+destroyed.y   , xy[0].x+offsetX+destroyed.x+1 , xy[0].y+offsetY+destroyed.y   );
   }
   SDL_SetRenderDrawColor(renderer, 255,255,255, SDL_ALPHA_OPAQUE);
-  SDL_RenderDrawLine(renderer , xn[s-1]+offsetX+xDestroyed    , yn[s-1]+offsetY+yDestroyed    , xn[0]+offsetX+xDestroyed    , yn[0]+offsetY+yDestroyed    );
+  SDL_RenderDrawLine(renderer , xy[s-1].x+offsetX+destroyed.x    , xy[s-1].y+offsetY+destroyed.y    , xy[0].x+offsetX+destroyed.x    , xy[0].y+offsetY+destroyed.y    );
 }
 
-void base::drawObjectWithMirrors( SDL_Renderer *renderer , std::vector<int>& xn , std::vector<int>& yn ) {
+void base::drawObjectWithMirrors( SDL_Renderer *renderer , std::vector<POINT>& xy ) {
   if ( gameWorld.display.mirror ) {
     for ( int mX = -1 ; mX <= 1 ; mX++ ) {
       for ( int mY = -1 ; mY <= 1 ; mY++ ) {
-        drawObject( renderer,xn,yn , gameWorld.display.width * mX , gameWorld.display.height * mY );
+        drawObject( renderer,xy , gameWorld.display.width * mX , gameWorld.display.height * mY );
       }
     }
   } else {
-    drawObject( renderer , xn , yn , 0 , 0 );
+    drawObject( renderer , xy , 0 , 0 );
   }
 }
 
@@ -118,35 +114,35 @@ int base::KreuzProdTest(float x_A,float y_A,float x_B,float y_B,float x_C,float 
   return 0;
 }
 
-bool base::pointInPolygon( float x,float y,std::vector<int>& xn , std::vector<int>& yn , int offsetX , int offsetY ) {
-  int polygonSize = xn.size();
+bool base::pointInPolygon( POINT position,std::vector<POINT>& xy , int offsetX , int offsetY ) {
+  int polygonSize = xy.size();
   int t = -1;
   for ( int i=0 ; i<polygonSize-1 ; i++ ) {
-    t = t * KreuzProdTest( x,y,xn[i]+offsetX,yn[i]+offsetY,xn[i+1]+offsetX,yn[i+1]+offsetY );
+    t = t * KreuzProdTest( position.x,position.y,xy[i].x+offsetX,xy[i].y+offsetY,xy[i+1].x+offsetX,xy[i+1].y+offsetY );
     if ( t==0 ) {
       break;
     }
   }
   if ( polygonSize>1 ) { // polygon schliessen....
-    t = t * KreuzProdTest( x,y,xn[polygonSize-1]+offsetX,yn[polygonSize-1]+offsetY,xn[0]+offsetX,yn[0]+offsetY );
+    t = t * KreuzProdTest( position.x,position.y,xy[polygonSize-1].x+offsetX,xy[polygonSize-1].y+offsetY,xy[0].x+offsetX,xy[0].y+offsetY );
   }  
   return (t>=0); // innerhalb oder des Polygons oder auf einer Linie
 }
 
-bool base::collision( std::vector<int>& polygon2_X,std::vector<int>& polygon2_Y ) {
+bool base::collision( std::vector<POINT>& polygon2 ) {
   if ( gameWorld.display.mirror ) {
     for ( int mX=-1 ; mX<=1 ; mX++ ) {
       for ( int mY=-1 ; mY<=1 ; mY++ ) {
-        for( int i=0 ; i<m_transformedX.size() ; i++ ) {
-          if ( pointInPolygon( m_transformedX[i],m_transformedY[i] , polygon2_X,polygon2_Y , gameWorld.display.width  * mX,gameWorld.display.height * mY ) ) {
+        for( int i=0 ; i<m_transformed.size() ; i++ ) {
+          if ( pointInPolygon( m_transformed[i] , polygon2 , gameWorld.display.width * mX,gameWorld.display.height * mY ) ) {
             return true;
           }
         }
       }
     }
   } else {
-    for( int i=0 ; i<m_transformedX.size() ; i++ ) {
-      if ( pointInPolygon( m_transformedX[i],m_transformedY[i] , polygon2_X,polygon2_Y , 0,0 ) ) {
+    for( int i=0 ; i<m_transformed.size() ; i++ ) {
+      if ( pointInPolygon( m_transformed[i] , polygon2 , 0,0 ) ) {
         return true;
       }
     }

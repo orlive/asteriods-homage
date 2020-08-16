@@ -4,31 +4,29 @@
 
 const double PI = std::acos(-1);
 
-vector::vector( float x , float y ) {
-  m_x = x;
-  m_y = y;
+vector::vector( POINT position ) {
+  m_position = position;
 }
 
 void vector::stop() {
-  setXY( 0.0f , 0.0f );
+  setPosition( { 0.0f , 0.0f } );
 }
 
-void vector::setXY( float x, float y ) {
-  m_x = x;
-  m_y = y;
+void vector::setPosition( POINT position ) {
+  m_position = position;
 }
 
 void vector::add( float angle,float magnitude ) {
   float bm = bogenmass(angle);
-  m_x += magnitude * std::sin(bm);
-  m_y -= magnitude * std::cos(bm);
+  m_position.x += magnitude * std::sin(bm);
+  m_position.y -= magnitude * std::cos(bm);
 }
 
 float vector::rad() {
-  float rad = std::atan( m_y / m_x );
+  float rad = std::atan( m_position.y / m_position.x );
 
-  if ( m_x < 0 ) return rad + PI;
-  if ( m_y < 0 ) return rad + PI * 2;
+  if ( m_position.x < 0 ) return rad + PI;
+  if ( m_position.y < 0 ) return rad + PI * 2;
 
   return rad;
 }
@@ -41,5 +39,5 @@ float vector::degree() {
 }
 
 float vector::magnitude() {
-  return std::sqrtf( m_x * m_x + m_y * m_y );
+  return std::sqrtf( m_position.x * m_position.x + m_position.y * m_position.y );
 }

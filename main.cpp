@@ -124,10 +124,14 @@ bool game( sdlEngine& gameSDL ) {
   int score = 0;
   int lives = 3;
 
+  gameSDL.playSound(4);
+
   routinen.genLevel( &gameSDL,level );
   routinen.genScore( &gameSDL,score );
   routinen.genLives( &gameSDL,lives );
   routinen.genGameOver( &gameSDL );
+
+  bool spacePressed = false;
 
   while ( true ) {
     gameSDL.newLoop( gameWorld.time.elapsed,gameWorld.time.lastTicks,gameWorld.time.timeFactor );
@@ -135,12 +139,17 @@ bool game( sdlEngine& gameSDL ) {
 
     const Uint8* state = gameSDL.state();
 
-    if ( state[SDL_SCANCODE_SPACE] ) { if ( aShip.isDestroyed() ) {
-                                        if ( lives>0 ) aShip.renew();
-                                       } else {
-                                         lasers.newLaser(aShip,gameSDL); 
-                                       }
-                                     }
+    if ( state[SDL_SCANCODE_SPACE] && !spacePressed ) {
+      if ( ! aShip.isDestroyed() ) {
+        lasers.newLaser(aShip,gameSDL); 
+      } else if ( lives>0 ) {
+        if ( aShip.renew() ) {
+          gameSDL.playSound(4);
+        }  
+      }
+    }
+    spacePressed = ( state[SDL_SCANCODE_SPACE] );
+
     if ( state[SDL_SCANCODE_RIGHT] ) aShip.rotateRight();
     if ( state[SDL_SCANCODE_LEFT]  ) aShip.rotateLeft();
     if ( state[SDL_SCANCODE_UP]    ) aShip.thrust(particles);
@@ -203,17 +212,17 @@ bool game( sdlEngine& gameSDL ) {
       // -> Kollision mit dem Schiff?
       if ( aShip.isViable() ) {
         if ( ! aShip.isDestroyed() ) {
-          if ( aShip.collision( rocks[i]->transedX() ,rocks[i]->transedY() ) ) {
+          if ( aShip.collision( rocks[i]->transformed() ) ) {
             aShip.destroy(particles);
             routinen.genLives( &gameSDL , --lives );
-            gameSDL.playSound(2);
+            gameSDL.playSound(3);
           }
         }
       }
 
       // -> von einem Laser getroffen?
       for ( int u=0 ; u<lasers.array.size() ; u++ ) {
-        if ( lasers.array[u]->collision( rocks[i]->transedX() ,rocks[i]->transedY() ) ) {
+        if ( lasers.array[u]->collision( rocks[i]->transformed() ) ) {
           hitRockIndex = u;
           break;
         }
@@ -275,12 +284,17 @@ int main( int argc,char *argv[] ) {
   std::vector<std::string> sounds = {
     "assets/sounds/344276__nsstudios__laser3.wav", // laser
     "assets/sounds/384113__microsoftsam__bang01.wav", // rock hit
-    "assets/sounds/95749__cgeffex__ship-artillery-blast-classic.wav" // ship explosion
+    "assets/sounds/95749__cgeffex__ship-artillery-blast-classic.wav", // ship explosion
+    "assets/sounds/462189__tolerabledruid6__8-bit-atari-boom.wav", // ship explosion - alternativ
+    "assets/sounds/323134__cognito-perceptu__atari-style-vibration-4.wav" // ship restart
   };
   gameSDL.loadSounds( sounds );
 
   gameWorld.processArguments(argc,argv);
-  gameSDL.use2screen(); // falls 2 Monitore... zeige Programm auf dem rechten.. ;)
+
+  if ( gameWorld.haveOption('2',argc,argv) ) {
+    gameSDL.use2screen(); // falls 2 Monitore... zeige Programm auf dem rechten.. ;)
+  }
 
   while ( game( gameSDL ) )
     ;

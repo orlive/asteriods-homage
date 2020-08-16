@@ -19,8 +19,8 @@ class ship : public base {
     ship();
     bool isViable();
     float getDegree();
-    void renew();
-    void resize( int size );
+    bool renew();
+    void resize( float size );
     void thrust(std::vector< std::shared_ptr<particle> >& particles);
     void destroy(std::vector< std::shared_ptr<particle> >& particles);
     void stop();

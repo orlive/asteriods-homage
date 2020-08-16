@@ -1,15 +1,19 @@
 #ifndef VECTOR_DEFINE
 #define VECTOR_DEFINE
 
+typedef struct {
+  float x;
+  float y;
+} POINT;
+
 class vector {
   protected:
-    float m_x = 0;
-    float m_y = 0;
+    POINT m_position = { .x = 0.0f , .y = 0.0f };
 
   public:
-    vector( float x=0 , float y=0 );
+    vector( POINT position = { .x = 0.0f , .y = 0.0f } );
     void stop();
-    void setXY( float x, float y );
+    void setPosition( POINT position ); // vorher setXY
     void add( float angle,float magnitude );
     float rad();
     float degree();

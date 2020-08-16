@@ -7,18 +7,16 @@
 
 class base {
   protected:
-    std::vector<int> m_polygonX;
-    std::vector<int> m_polygonY;
-    std::vector<int> m_transformedX;
-    std::vector<int> m_transformedY;
+    std::vector<POINT> m_polygon;
+    std::vector<POINT> m_transformed;
 
     std::vector< std::shared_ptr<force> > m_destroyedForces;
 
     int   m_timeToDie;
     bool  m_destroyed = false;
     float m_size = 0;
-    float m_x = 0;
-    float m_y = 0;
+
+    POINT m_position;
 
   public:
     int  x();
@@ -26,20 +24,19 @@ class base {
     int  size();
     bool isDestroyed();
 
-    std::vector<int>& transedX();
-    std::vector<int>& transedY();
+    std::vector<POINT>& transformed();
 
     bool deceased();
     void clearPolygon();
-    void addToPolygon(int x,int y);
+    void addToPolygon(POINT position);
     void generatePosWidthMinDistance( int& x , int& y , int distance=0 );
-    void drawObject( SDL_Renderer *renderer , std::vector<int>& xn , std::vector<int>& yn , const int offsetX , const int offsetY );
-    void drawObjectWithMirrors( SDL_Renderer *renderer , std::vector<int>& xn , std::vector<int>& yn );
+    void drawObject( SDL_Renderer *renderer , std::vector<POINT>& xy , const int offsetX , const int offsetY );
+    void drawObjectWithMirrors( SDL_Renderer *renderer , std::vector<POINT>& xy );
     void drawPoint( SDL_Renderer *renderer , int x , int y , int offsetX , int offsetY );
     void drawPointWithMirror( SDL_Renderer *renderer , int x , int y );
     int KreuzProdTest(float x_A,float y_A,float x_B,float y_B,float x_C,float y_C);
-    bool pointInPolygon( float x,float y,std::vector<int>& xn , std::vector<int>& yn , int offsetX , int offsetY );
-    bool collision( std::vector<int>& polygon2_X,std::vector<int>& polygon2_Y );
+    bool pointInPolygon( POINT position , std::vector<POINT>& xy , int offsetX , int offsetY );
+    bool collision( std::vector<POINT>& polygon2 );
 };
 
 #endif

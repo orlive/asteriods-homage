@@ -5,14 +5,13 @@
 
 class force : public vector {
   private:
-    float m_combinedX = 0.0f;
-    float m_combinedY = 0.0f;
+    POINT m_combined = { .x = 0.0f , .y = 0.0f };
 
   public:
     force( float magnitude=0 , float randomPercentage=0 , int degree=0 );
     ~force();
-    void calcCombinedOffsets( float& xAdd,float& yAdd );
-    void calcOffsets( float& xAdd,float& yAdd );
+    void calcCombinedOffsets( POINT& add );
+    void calcOffsets( POINT& add );
     void slowDown();
 };
 
