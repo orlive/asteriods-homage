@@ -2,11 +2,15 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <SDL_ttf.h>
 
+#define D std::cout << __LINE__ << std::endl;
 const double PI = std::acos(-1);
 
 #define BOGENMASS(a) ( ( PI / 180.0f ) * (float)a )
 #define GRAD(a)      ( (float)a / ( PI / 180 ) )
+#define CHARWIDTH 17
+#define CHARHEIGHT 35
 
 float randomf(float low, float high) {
   if (low > high)
@@ -21,6 +25,13 @@ int random(int low, int high) {
 }
 
 struct /* GAMEWORLD */ {
+
+  struct /* time */ {
+    int   lastTicks;
+    int   elapsed;
+    float timeFactor;
+  } time;
+
   struct /* display */ {
     int  width  = 800;
     int  height = 640;
@@ -59,41 +70,30 @@ struct /* GAMEWORLD */ {
   bool  debug      = false;
   int   game_delay = 10;
 
-  const Uint8 *state;
-  int   lastTicks;
-  int   elapsed;
-  float timeFactor;
-
   void toggleRockFreezed() {
     static int nextToogleRockFreezed;
-    if ( lastTicks > nextToogleRockFreezed ) {
-      nextToogleRockFreezed = lastTicks + 500;
+    if ( time.lastTicks > nextToogleRockFreezed ) {
+      nextToogleRockFreezed = time.lastTicks + 500;
       rock.frezzed = ! rock.frezzed;
     }
   }
 
   void toggleMirrorMode() {
     static int nextToogleMirrorMode;
-    if ( lastTicks > nextToogleMirrorMode ) {
-      nextToogleMirrorMode = lastTicks + 500;
+    if ( time.lastTicks > nextToogleMirrorMode ) {
+      nextToogleMirrorMode = time.lastTicks + 500;
       display.mirror = ! display.mirror;
     }
   }
 
   void toggleBoldMode() {
     static int nextToogleBoldMode;
-    if ( lastTicks > nextToogleBoldMode ) {
-      nextToogleBoldMode = lastTicks + 500;
+    if ( time.lastTicks > nextToogleBoldMode ) {
+      nextToogleBoldMode = time.lastTicks + 500;
       display.bold = ! display.bold;
     }
   }
-
-  void newLoop() {
-    elapsed    = SDL_GetTicks() - lastTicks;
-    lastTicks  = SDL_GetTicks();
-    timeFactor = (float)elapsed / 1000.0f;
-  }
-
+  
   void adjustBoundaries( int& x , int& y ) {
     while ( x > display.width  ) { x-=display.width;  };
     while ( x < 0              ) { x+=display.width;  };
@@ -108,68 +108,133 @@ struct /* GAMEWORLD */ {
     while ( y < 0              ) { y+=display.height; };
   }
 
-  bool haveQuitEvent() {
-		SDL_Event event;
-		while (SDL_PollEvent(&event)) {
-      if ( event.type==SDL_QUIT || ( event.type==SDL_KEYDOWN && event.key.keysym.sym==SDLK_q ) ) {
-        return true;
+  void processArguments( int argc , char* argv[] ) {
+    for ( int i=1 ; i<argc ; i++ ) {
+      char*p = argv[i];
+      if ( *p!='-' ) continue;
+      if ( *(++p)=='-' ) p++;
+      switch( *p ) {
+        case 'd' :
+        case 'v' : debug          = true; break;
+        case 'b' : display.bold   = false; break;
+        case 'm' : display.mirror = false; break;
       }
     }
-    return false;
   }
 
-  void newInput() {
-    SDL_PumpEvents();
-    state = SDL_GetKeyboardState(NULL);
-  }
 } gameWorld;
 
-struct /* gameSDL */ {
-	SDL_Window   *window;
-	SDL_Renderer *renderer;
-  SDL_Cursor   *cursor;
+class sdlEngine {
+  private:
+    SDL_Window   *m_window;
+    SDL_Renderer *m_renderer;
+    SDL_Cursor   *m_cursor;
+    TTF_Font     *m_font;
+    SDL_Color     m_fontColor = {255, 255, 255, 255};
+    SDL_Color     m_backColor = {  0,   0,   0, 255};
 
-  bool init( const char *title ) {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Initialize SDL: %s",SDL_GetError());
+    const Uint8  *m_state;
+
+  public:
+    // TODO -> throw errors!!!
+
+    sdlEngine( const char *title ) {
+      if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Initialize SDL: %s",SDL_GetError());
+        return;
+      }
+
+      if ( ( m_cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND) ) == NULL ) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Get the system hand cursor: %s", SDL_GetError());
+        return;
+      }
+      SDL_SetCursor(m_cursor);
+
+      if (SDL_CreateWindowAndRenderer(gameWorld.display.width, gameWorld.display.height, 0, &m_window, &m_renderer) < 0) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Create window and renderer: %s", SDL_GetError());
+        return;
+      }
+
+      SDL_SetWindowTitle( m_window , title );
+      if ( TTF_Init() < 0 ) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Initialize SDL_ttf: %s",TTF_GetError());
+        return;
+      }
+        
+      m_font = TTF_OpenFont("assets/FiraMono-Regular.ttf", 20);
+      if (m_font == NULL) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Open font: %s",TTF_GetError());
+        return;
+      }
+    }
+
+    ~sdlEngine() {
+      TTF_CloseFont(m_font);
+      SDL_DestroyRenderer(m_renderer);
+      SDL_DestroyWindow(m_window);
+      SDL_Quit();
+    }
+
+    void newLoop() {
+      gameWorld.time.elapsed    = SDL_GetTicks() - gameWorld.time.lastTicks;
+      gameWorld.time.lastTicks  = SDL_GetTicks();
+      gameWorld.time.timeFactor = (float)gameWorld.time.elapsed / 1000.0f;
+    }
+
+    const Uint8* state() {
+      return m_state;
+    }
+
+    SDL_Renderer* renderer() {
+      return m_renderer;
+    }
+
+    bool haveQuitEvent() {
+      SDL_Event event;
+      while (SDL_PollEvent(&event)) {
+        if ( event.type==SDL_QUIT || ( event.type==SDL_KEYDOWN && event.key.keysym.sym==SDLK_q ) ) {
+          return true;
+        }
+      }
       return false;
     }
-
-    if ( ( cursor = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_HAND) ) == NULL ) {
-      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Get the system hand cursor: %s", SDL_GetError());
-      return false;
-    }
-    SDL_SetCursor(cursor);
-
-    if (SDL_CreateWindowAndRenderer(gameWorld.display.width, gameWorld.display.height, 0, &window, &renderer) < 0) {
-      SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,"Create window and renderer: %s", SDL_GetError());
-      return false;
+  
+    void newInput() {
+      SDL_PumpEvents();
+      this->m_state = SDL_GetKeyboardState(NULL);
     }
 
-    SDL_SetWindowTitle( window , title );
-
-    return true;
-  }
-
-  int shutdown() {
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
-
-    return 1;
-  }
-
-  void use2screen() {
-    printf("SDL_GetNumVideoDisplays() : %d\n",SDL_GetNumVideoDisplays());
-    if ( SDL_GetNumVideoDisplays() > 1 ) {
-      int x,y;
-      SDL_GetWindowPosition( window,&x,&y);
-      SDL_SetWindowPosition( window,x+1980,y);
-      printf("x/y:%d/%d\n",x,y);
+    void use2screen() {
+      printf("SDL_GetNumVideoDisplays() : %d\n",SDL_GetNumVideoDisplays());
+      if ( SDL_GetNumVideoDisplays() > 1 ) {
+        int x,y;
+        SDL_GetWindowPosition( m_window,&x,&y);
+        SDL_SetWindowPosition( m_window,x+1980,y);
+        printf("x/y:%d/%d\n",x,y);
+      }
     }
-  }
 
-} gameSDL;
+    SDL_Texture* genTexture( const char* text ) {
+      SDL_Surface *surface = TTF_RenderText_Blended( m_font,text,m_fontColor );
+      SDL_Texture *texture = SDL_CreateTextureFromSurface(m_renderer, surface);
+      SDL_FreeSurface(surface);
+
+      return texture;
+    }
+
+    void drawTexture( int x,int y,int w,int h,SDL_Texture* texture ) {
+      if ( texture ) {
+        SDL_Rect dest = { .x = x , .y = y , .w = w , .h = h };
+        SDL_RenderCopy(m_renderer, texture, NULL, &dest);
+      }
+    }
+
+    void drawText( int x,int y,int w,int h,const char* text ) {
+      SDL_Texture *texture = genTexture( text );
+      drawTexture( x,y,w,h,texture );
+      SDL_DestroyTexture(texture);
+    }
+};
 
 class vector {
   protected:
@@ -246,15 +311,15 @@ class force : public vector {
     }
 
     void calcOffsets( float& xAdd,float& yAdd ) {
-      xAdd = gameWorld.timeFactor * m_x;
-      yAdd = gameWorld.timeFactor * m_y;
+      xAdd = gameWorld.time.timeFactor * m_x;
+      yAdd = gameWorld.time.timeFactor * m_y;
     }
 
     void slowDown() {
       float deg  = degree();
       float size = magnitude();
 
-      size -= ( gameWorld.timeFactor * size * gameWorld.ship.resistance );
+      size -= ( gameWorld.time.timeFactor * size * gameWorld.ship.resistance );
 
       if ( size < 0.05f ) {
         stop();
@@ -290,7 +355,7 @@ class base {
     std::vector<int>& transedY() { return m_transformedY; }
 
     bool deceased() {
-      return ( m_timeToDie==0 || gameWorld.lastTicks > m_timeToDie );
+      return ( m_timeToDie==0 || gameWorld.time.lastTicks > m_timeToDie );
     }
 
     void clearPolygon() {
@@ -455,7 +520,7 @@ class rock : public base {
       m_x = x;
       m_y = y;
       m_size = size;
-      m_timeToDie = gameWorld.lastTicks + gameWorld.rock.lifespan + random(0,gameWorld.rock.lifespan/10);
+      m_timeToDie = gameWorld.time.lastTicks + gameWorld.rock.lifespan + random(0,gameWorld.rock.lifespan/10);
 
       m_force = std::shared_ptr<force>( new force(speed,20,degree) );
     }
@@ -570,7 +635,7 @@ class particle : public base {
       float r = randomf(degreeStart,degreeEnd);
 
       m_force.add( randomf(degreeStart,degreeEnd),random(speedStart,speedEnd) );
-      m_timeToDie = gameWorld.lastTicks + gameWorld.particle.lifespan + random(0,gameWorld.particle.lifespan/10);
+      m_timeToDie = gameWorld.time.lastTicks + gameWorld.particle.lifespan + random(0,gameWorld.particle.lifespan/10);
     }
 
     ~particle() {
@@ -622,6 +687,12 @@ class ship : public base {
       return m_degree;
     }
 
+    void renew() {
+      if ( this->isDestroyed() ) {
+        this->m_destroyed = false;
+      }
+    }
+
     void resize( int size ) {
       int offset = -(size/2);
 
@@ -642,8 +713,8 @@ class ship : public base {
     void thrust(std::vector< std::shared_ptr<particle> >& particles) {
       if ( m_destroyed ) return;
 
-      m_force.add(m_degree,gameWorld.timeFactor * 200.0f);
-      m_thrustOn = gameWorld.lastTicks + 200;
+      m_force.add(m_degree,gameWorld.time.timeFactor * 200.0f);
+      m_thrustOn = gameWorld.time.lastTicks + 200;
 
       float bogenmass = BOGENMASS(m_degree);
       int x = m_x - gameWorld.ship.size*std::sin(bogenmass);
@@ -683,13 +754,13 @@ class ship : public base {
 
     void rotateLeft() {
       if ( m_destroyed ) return;
-      m_degree -= gameWorld.timeFactor * 180;
+      m_degree -= gameWorld.time.timeFactor * 180;
       while ( m_degree < 0 ) m_degree += 360.0f;
     }
 
     void rotateRight() {
       if ( m_destroyed ) return;
-      m_degree += gameWorld.timeFactor * 180;
+      m_degree += gameWorld.time.timeFactor * 180;
       while ( m_degree >= 360 ) m_degree -= 360.0f;
     }
 
@@ -741,7 +812,7 @@ class ship : public base {
 
       drawObjectWithMirrors( renderer,m_transformedX,m_transformedY );
 
-      if ( m_thrustOn > gameWorld.lastTicks ) {
+      if ( m_thrustOn > gameWorld.time.lastTicks ) {
         std::vector<int> xn;
         std::vector<int> yn;
         for ( int i=0 ; i<m_thrustX.size() ; i++ ) {
@@ -760,9 +831,9 @@ struct /* LASERS */ {
 
   void newLaser(ship& aShip) {
     static int waitTill;
-    if ( gameWorld.lastTicks > waitTill ) {
+    if ( gameWorld.time.lastTicks > waitTill ) {
       array.push_back( std::shared_ptr<laser>( new laser(aShip.x(),aShip.y(),aShip.getDegree()) ) );
-      waitTill = gameWorld.lastTicks + gameWorld.ship.laser_wait;
+      waitTill = gameWorld.time.lastTicks + gameWorld.ship.laser_wait;
     }
   }
 
@@ -779,47 +850,125 @@ struct /* LASERS */ {
 
 } lasers;
 
-bool game(SDL_Renderer* renderer ) {
+struct /* routinen */ {
+  typedef struct {
+    SDL_Texture* texture;
+    int          width;
+  } UIText;
+
+  UIText textLevel;
+  UIText textScore;
+  UIText textLives;
+  UIText textFPS;
+
+  int number2width(int n) {
+    int w = 1;
+    if ( n>9  ) w++;
+    if ( n>99 ) w++;
+    if ( n>999) w++;
+    return w;
+  }
+
+  void genLevel( sdlEngine* engine,int level ) {
+    char txt[20];
+    if ( textLevel.texture ) SDL_DestroyTexture( textLevel.texture );
+    sprintf( txt,"Level: %d",level );
+    textLevel.texture = engine->genTexture( txt );
+    textLevel.width   = number2width(level)+7;
+  }
+
+  void genScore( sdlEngine* engine,int score ) {
+    char txt[20];
+    if ( textScore.texture ) SDL_DestroyTexture( textScore.texture );
+    sprintf( txt,"Score: %d",score );
+    textScore.texture = engine->genTexture( txt );
+    textScore.width   = number2width(score)+7;
+  }
+
+  void genLives( sdlEngine* engine,int lives ) {
+    char txt[20];
+    if ( textLives.texture ) SDL_DestroyTexture( textLives.texture );
+    sprintf( txt,"Ships: %d",lives );
+    textLives.texture = engine->genTexture( txt );
+    textLives.width   = number2width(lives)+7;
+  }
+
+  void drawTexts( sdlEngine* engine ) {
+    engine->drawTexture(   1,1,textLevel.width*CHARWIDTH,CHARHEIGHT,textLevel.texture );
+    engine->drawTexture( 250,1,textScore.width*CHARWIDTH,CHARHEIGHT,textScore.texture );
+    engine->drawTexture( 500,1,textLives.width*CHARWIDTH,CHARHEIGHT,textLives.texture );
+  }
+
+  void drawFPS( sdlEngine* engine ) {
+    static int nextDraw;
+
+    if ( gameWorld.time.lastTicks > nextDraw ) {
+      nextDraw = gameWorld.time.lastTicks + 333;
+      char txt[20];
+      if ( textFPS.texture ) SDL_DestroyTexture( textFPS.texture );
+      sprintf( txt,"(%03d)",(int)(1000.0f/(float)gameWorld.time.elapsed) );
+      textFPS = { engine->genTexture( txt ) , 5 };
+    }
+    
+    engine->drawTexture( 740,1,textFPS.width*CHARWIDTH/3*2,CHARHEIGHT/3*2,textFPS.texture );
+  }
+
+} routinen;
+
+bool game( sdlEngine& gameSDL ) {
   ship aShip;
   std::vector< std::shared_ptr<rock> > rocks;
   std::vector< std::shared_ptr<particle> > particles;
-  int level = 1;
+  int level = 0;
+  int score = 0;
+  int lives = 3;
 
-	while ( true ) {
-    gameWorld.newLoop();
-    gameWorld.newInput();
+  routinen.genLevel( &gameSDL,level );
+  routinen.genScore( &gameSDL,score );
+  routinen.genLives( &gameSDL,lives );
 
-    if (gameWorld.state[SDL_SCANCODE_R]    ) if ( aShip.isDestroyed() ) return true;
-    if (gameWorld.state[SDL_SCANCODE_SPACE]) lasers.newLaser(aShip);
-    if (gameWorld.state[SDL_SCANCODE_RIGHT]) aShip.rotateRight();
-    if (gameWorld.state[SDL_SCANCODE_LEFT] ) aShip.rotateLeft();
-    if (gameWorld.state[SDL_SCANCODE_UP]   ) aShip.thrust(particles);
+  while ( true ) {
+    gameSDL.newLoop();
+    gameSDL.newInput();
+
+    const Uint8* state = gameSDL.state();
+
+    if ( state[SDL_SCANCODE_R]     ) if ( aShip.isDestroyed() ) return true;
+    if ( state[SDL_SCANCODE_SPACE] ) lasers.newLaser(aShip);
+    if ( state[SDL_SCANCODE_RIGHT] ) aShip.rotateRight();
+    if ( state[SDL_SCANCODE_LEFT]  ) aShip.rotateLeft();
+    if ( state[SDL_SCANCODE_UP]    ) aShip.thrust(particles);
+
+    if ( state[SDL_SCANCODE_A]     ) aShip.renew(); // test
 
     if ( gameWorld.debug ) {
-      if (gameWorld.state[SDL_SCANCODE_0]  ) aShip.stop(); // TODO - entfernen, wenn fertig
-      if (gameWorld.state[SDL_SCANCODE_F]  ) gameWorld.toggleRockFreezed(); // TODO - entfernen, wenn fertig
-      if (gameWorld.state[SDL_SCANCODE_M]  ) gameWorld.toggleMirrorMode(); // TODO - entfernen, wenn fertig
-      if (gameWorld.state[SDL_SCANCODE_B]  ) gameWorld.toggleBoldMode(); // TODO - enfernen, wenn fertig
-      if (gameWorld.state[SDL_SCANCODE_8]  ) aShip.resize( ++gameWorld.ship.size );
-      if (gameWorld.state[SDL_SCANCODE_9]  ) aShip.resize( --gameWorld.ship.size );
-      if (gameWorld.state[SDL_SCANCODE_1]  ) printf( "(%05ld) FPS:%f\n",rocks.size(),1000.0f/gameWorld.elapsed );
+      if ( state[SDL_SCANCODE_0] ) aShip.stop(); // TODO - entfernen, wenn fertig
+      if ( state[SDL_SCANCODE_F] ) gameWorld.toggleRockFreezed(); // TODO - entfernen, wenn fertig
+      if ( state[SDL_SCANCODE_M] ) gameWorld.toggleMirrorMode(); // TODO - entfernen, wenn fertig
+      if ( state[SDL_SCANCODE_B] ) gameWorld.toggleBoldMode(); // TODO - enfernen, wenn fertig
+      if ( state[SDL_SCANCODE_8] ) aShip.resize( ++gameWorld.ship.size );
+      if ( state[SDL_SCANCODE_9] ) aShip.resize( --gameWorld.ship.size );
+      if ( state[SDL_SCANCODE_1] ) printf( "(%05ld) FPS:%f\n",rocks.size(),1000.0f/gameWorld.time.elapsed );
     }
 
-    if (gameWorld.haveQuitEvent()) return false;
+    if ( gameSDL.haveQuitEvent() ) return false;
 
-    SDL_SetRenderDrawColor(renderer, 0,0,0, SDL_ALPHA_OPAQUE);
-		SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(gameSDL.renderer(), 0,0,0, SDL_ALPHA_OPAQUE);
+    SDL_RenderClear(gameSDL.renderer());
+
+    routinen.drawTexts( &gameSDL );
+    routinen.drawFPS( &gameSDL );
 
     aShip.moveShip( );
-    aShip.render(renderer);
+    aShip.render(gameSDL.renderer());
 
-    lasers.render(renderer);
-
+    lasers.render(gameSDL.renderer());
 
     // wenn keine Asteroiden mehr vorhanden sind... alte Anzahl verdoppeln und neu generieren
     if ( rocks.size() == 0 ) {
-      level *= 2;
-      for ( int i=0 ; i<level ; i++ ) {
+      routinen.genLevel( &gameSDL,++level );
+
+      for ( int i=0 ; i<level*level ; i++ ) {
         int x,y;
         aShip.generatePosWidthMinDistance(x,y,200);
         rocks.push_back( std::shared_ptr<rock>( new rock(x,y,random(300,700)/100,100 ) ) );
@@ -838,8 +987,11 @@ bool game(SDL_Renderer* renderer ) {
       rocks[i]->move();
 
       // -> Kollision mit dem Schiff?
-      if ( aShip.collision( rocks[i]->transedX() ,rocks[i]->transedY() ) ) {
-        aShip.destroy(particles);
+      if ( ! aShip.isDestroyed() ) {
+        if ( aShip.collision( rocks[i]->transedX() ,rocks[i]->transedY() ) ) {
+          aShip.destroy(particles);
+          routinen.genLives( &gameSDL , --lives );
+        }
       }
 
       // -> von einem Laser getroffen?
@@ -852,6 +1004,7 @@ bool game(SDL_Renderer* renderer ) {
 
       // Asteroid von Laser getroffen... teilen und 2 kleinere Brocken erstellen.
       if ( hitRockIndex != -1 ) {
+        routinen.genScore( &gameSDL,score+=25 );
         for ( int u=1 ; u<10 ; u++ ) {
           particles.push_back( std::shared_ptr<particle>( new particle( rocks.at(i)->x(),rocks.at(i)->y(), rocks.at(i)->size()*10.0f,
                                                                         0, // min_speed,
@@ -870,12 +1023,12 @@ bool game(SDL_Renderer* renderer ) {
         rocks.erase( rocks.begin() + i );
         i--;
       } else {
-        SDL_SetRenderDrawColor(renderer, 0,0,0, SDL_ALPHA_OPAQUE);
+        SDL_SetRenderDrawColor(gameSDL.renderer(), 0,0,0, SDL_ALPHA_OPAQUE);
         if ( rocks[i]->deceased() ) {
           rocks.erase( rocks.begin() + i );
           i--;
         } else {
-          rocks[i]->render(renderer);
+          rocks[i]->render(gameSDL.renderer());
         }
       }
     }
@@ -887,24 +1040,25 @@ bool game(SDL_Renderer* renderer ) {
         i++;
       } else {
         particles.at(i)->move();
-        particles.at(i)->render(renderer);
+        particles.at(i)->render(gameSDL.renderer());
       } 
     }
 
-		SDL_RenderPresent(renderer);
+    SDL_RenderPresent(gameSDL.renderer());
     SDL_Delay( gameWorld.game_delay );
-	}
-
-}
-
-int main() {
-  if ( ! gameSDL.init("Space Ship Test") ) {
-    return -1;
   }
 
+  return true;
+}
+
+int main( int argc,char *argv[] ) {
+  sdlEngine gameSDL( (char*) "Asteroids" );
+
+  gameWorld.processArguments(argc,argv);
   gameSDL.use2screen(); // falls 2 Monitore... zeige Programm auf dem rechten.. ;)
-  while ( game(gameSDL.renderer) )
+
+  while ( game( gameSDL ) )
     ;
 
-  return gameSDL.shutdown();
+  return 0;
 }
