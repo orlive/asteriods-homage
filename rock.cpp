@@ -16,7 +16,8 @@ rock::rock(int x,int y,float size,float speed,int degree) {
   m_position.x = x;
   m_position.y = y;
   m_size = size;
-  m_timeToDie = gameWorld.time.lastTicks + gameWorld.rock.lifespan + random(0,gameWorld.rock.lifespan/10);
+  // m_timeToDie = gameWorld.time.lastTicks + gameWorld.rock.lifespan + random(0,gameWorld.rock.lifespan/10);
+  m_timeToDie = 0;
 
   m_force        = std::shared_ptr<force>( new force(speed,20,degree) );
   m_degree       = random(0,359);
@@ -56,7 +57,7 @@ void rock::move() {
   while ( m_degree > 359 ) m_degree -= 360;
   float bm = bogenmass(m_degree);
 
-  for ( int i=0 ; i<m_polygon.size() ; i++ ) {
+  for ( std::size_t i=0 ; i<m_polygon.size() ; i++ ) {
     m_transformed.push_back( { ( m_polygon[i].x*std::cos(bm) - m_polygon[i].y*std::sin(bm) ) * m_size + m_position.x ,
                                ( m_polygon[i].x*std::sin(bm) + m_polygon[i].y*std::cos(bm) ) * m_size + m_position.y } );
   }

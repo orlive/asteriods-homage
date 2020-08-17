@@ -68,7 +68,7 @@ void ship::destroy(std::vector< std::shared_ptr<particle> >& particles) {
     m_waitForRenew = gameWorld.time.lastTicks + 1000;
     m_destroyed    = true;
     m_destroyedForces.clear();
-    for ( int i=0 ; i<m_polygon.size() ; i++ ) {
+    for ( std::size_t i=0 ; i<m_polygon.size() ; i++ ) {
       m_destroyedForces.push_back( std::shared_ptr<force>( new force(20,10,random(0,359)) ) );
     }
     for ( int i=0 ; i<30 ; i++ ) {
@@ -129,7 +129,7 @@ void ship::render( SDL_Renderer *renderer ) {
   float bm = bogenmass(m_degree);
 
   if ( this->isDestroyed() ) { 
-    for ( int i=0 ; i<m_polygon.size() ; i++ ) {
+    for ( std::size_t i=0 ; i<m_polygon.size() ; i++ ) {
       POINT add = { 0.0f , 0.0f };
 
       m_destroyedForces.at(i)->calcOffsets( add );
@@ -138,7 +138,7 @@ void ship::render( SDL_Renderer *renderer ) {
                                  m_polygon[i].x*std::sin(bm) + m_polygon[i].y*std::cos(bm) + m_position.y + add.y } );
     }
   } else {
-    for ( int i=0 ; i<m_polygon.size() ; i++ ) {
+    for ( std::size_t i=0 ; i<m_polygon.size() ; i++ ) {
       m_transformed.push_back( { m_polygon[i].x*std::cos(bm) - m_polygon[i].y*std::sin(bm) + m_position.x ,
                                  m_polygon[i].x*std::sin(bm) + m_polygon[i].y*std::cos(bm) + m_position.y } );
     }
@@ -158,7 +158,7 @@ void ship::render( SDL_Renderer *renderer ) {
 
   if ( m_thrustOn > gameWorld.time.lastTicks ) {
     std::vector<POINT> xy;
-    for ( int i=0 ; i<m_thrustX.size() ; i++ ) {
+    for ( std::size_t i=0 ; i<m_thrustX.size() ; i++ ) {
       float pointY = (i==m_thrustX.size()-1) ? random(2,17) : random(-1,1);
       float pointX = random(-1,1);
       xy.push_back( { (pointX+m_thrustX[i])*std::cos(bm) - ( pointY+m_thrustY[i])*std::sin(bm) + m_position.x ,

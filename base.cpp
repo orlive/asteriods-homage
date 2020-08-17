@@ -9,7 +9,7 @@ bool base::isDestroyed() { return m_destroyed; }
 std::vector<POINT>& base::transformed() { return m_transformed; }
 
 bool base::deceased() {
-  return ( m_timeToDie==0 || gameWorld.time.lastTicks > m_timeToDie );
+  return ( m_timeToDie!=0 && gameWorld.time.lastTicks > m_timeToDie );
 }
 
 void base::clearPolygon() {
@@ -133,7 +133,7 @@ bool base::collision( std::vector<POINT>& polygon2 ) {
   if ( gameWorld.display.mirror ) {
     for ( int mX=-1 ; mX<=1 ; mX++ ) {
       for ( int mY=-1 ; mY<=1 ; mY++ ) {
-        for( int i=0 ; i<m_transformed.size() ; i++ ) {
+        for( std::size_t i=0 ; i<m_transformed.size() ; i++ ) {
           if ( pointInPolygon( m_transformed[i] , polygon2 , gameWorld.display.width * mX,gameWorld.display.height * mY ) ) {
             return true;
           }
@@ -141,7 +141,7 @@ bool base::collision( std::vector<POINT>& polygon2 ) {
       }
     }
   } else {
-    for( int i=0 ; i<m_transformed.size() ; i++ ) {
+    for( std::size_t i=0 ; i<m_transformed.size() ; i++ ) {
       if ( pointInPolygon( m_transformed[i] , polygon2 , 0,0 ) ) {
         return true;
       }

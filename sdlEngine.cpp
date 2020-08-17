@@ -116,10 +116,10 @@ void sdlEngine::loadSounds( std::vector<std::string> sounds ) {
 }
 
 void sdlEngine::playSound( int index ) {
-  if ( index>=0 && index<m_sounds.size() ) {
+  if ( index>=0 && index<(int)m_sounds.size() ) {
     SOUND s = m_sounds.at(index);
     SDL_ClearQueuedAudio(s.deviceId);
-    int success = SDL_QueueAudio(s.deviceId,s.wav_buffer,s.wav_length);
+    SDL_QueueAudio(s.deviceId,s.wav_buffer,s.wav_length);
     SDL_PauseAudioDevice(s.deviceId, 0);
     SDL_Delay(5);
   }

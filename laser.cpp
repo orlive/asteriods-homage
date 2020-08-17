@@ -11,12 +11,12 @@ laser::laser( float x,float y,float degree ) {
 
   float bm = bogenmass(degree);
 
-  for ( int i=0 ; i<m_polygon.size() ; i++ ) {
+  for ( std::size_t i=0 ; i<m_polygon.size() ; i++ ) {
     m_transformed.push_back( { m_polygon[i].x*std::cos(bm) - m_polygon[i].y*std::sin(bm) + x ,
                                m_polygon[i].x*std::sin(bm) + m_polygon[i].y*std::cos(bm) + y } );
   }
 
-  m_timeToDie = SDL_GetTicks() + gameWorld.laser.lifespan;
+  m_timeToDie = gameWorld.time.lastTicks + gameWorld.laser.lifespan;
 }
 
 laser::~laser() {
@@ -41,7 +41,7 @@ void laser::render( SDL_Renderer *renderer ) {
 
   gameWorld.adjustBoundaries( m_position );
 
-  for ( int i=0 ; i<m_polygon.size() ; i++ ) {
+  for ( std::size_t i=0 ; i<m_polygon.size() ; i++ ) {
     m_transformed[i].x = m_transformed[i].x - oldPosition.x + m_position.x;
     m_transformed[i].y = m_transformed[i].y - oldPosition.y + m_position.y;
   }

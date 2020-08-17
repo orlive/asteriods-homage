@@ -5,8 +5,6 @@ particle::particle( int x,int y,float randomPositionOffset,float speedStart,floa
   m_position.x = x + randomf( -randomPositionOffset/2,randomPositionOffset/2 );
   m_position.y = y + randomf( -randomPositionOffset/2,randomPositionOffset/2 );
 
-  float r = randomf(degreeStart,degreeEnd);
-
   m_force.add( randomf(degreeStart,degreeEnd),random(speedStart,speedEnd) );
   m_timeToDie = gameWorld.time.lastTicks + gameWorld.particle.lifespan + random(0,gameWorld.particle.lifespan/10);
 }

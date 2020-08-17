@@ -14,7 +14,6 @@ class sdlEngine {
     SDL_Cursor   *m_cursor;
     TTF_Font     *m_font;
     SDL_Color     m_fontColor = {255, 255, 255, 255};
-    SDL_Color     m_backColor = {  0,   0,   0, 255};
 
     const Uint8  *m_state;
 

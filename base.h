@@ -12,7 +12,7 @@ class base {
 
     std::vector< std::shared_ptr<force> > m_destroyedForces;
 
-    int   m_timeToDie;
+    int   m_timeToDie = 0;
     bool  m_destroyed = false;
     float m_size = 0;
 

@@ -26,7 +26,7 @@ struct /* LASERS */ {
   }
 
   void render( SDL_Renderer *renderer ) {
-    for ( int i = 0 ; i < array.size() ; i++ ) {
+    for ( std::size_t i = 0 ; i < array.size() ; i++ ) {
       if ( array.at(i)->deceased() ) {
         array.erase(array.begin()+i);
         i--;
@@ -204,7 +204,7 @@ bool game( sdlEngine& gameSDL ) {
     //   -> von einem Laser getroffen?
     //   -> darstellen
 
-    for ( int i=0 ; i<rocks.size() ; i++ ) {
+    for ( std::size_t i=0 ; i<rocks.size() ; i++ ) {
       int  hitRockIndex = -1;
 
       rocks[i]->move();
@@ -221,7 +221,7 @@ bool game( sdlEngine& gameSDL ) {
       }
 
       // -> von einem Laser getroffen?
-      for ( int u=0 ; u<lasers.array.size() ; u++ ) {
+      for ( std::size_t u=0 ; u<lasers.array.size() ; u++ ) {
         if ( lasers.array[u]->collision( rocks[i]->transformed() ) ) {
           hitRockIndex = u;
           break;
@@ -261,7 +261,7 @@ bool game( sdlEngine& gameSDL ) {
     }
 
     // Partikel verarbeiten und darstellen.  
-    for ( int i=0 ; i<particles.size() ; i++ ) {
+    for ( std::size_t i=0 ; i<particles.size() ; i++ ) {
       if ( particles.at(i)->deceased() ) {
         particles.erase(particles.begin()+i);
         i++;
