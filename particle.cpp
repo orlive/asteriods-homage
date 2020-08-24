@@ -6,11 +6,11 @@ particle::particle( int x,int y,float randomPositionOffset,float speedStart,floa
   m_position.y = y + randomf( -randomPositionOffset/2,randomPositionOffset/2 );
 
   m_force.add( randomf(degreeStart,degreeEnd),random(speedStart,speedEnd) );
-  m_timeToDie = gameWorld.time.lastTicks + gameWorld.particle.lifespan + random(0,gameWorld.particle.lifespan/10);
+  m_timeToDie = config.time.lastTicks + config.particle.lifespan + random(0,config.particle.lifespan/10);
 }
 
 particle::~particle() {
-  if ( gameWorld.debug ) {
+  if ( config.debug ) {
     std::cout << "delete particle" << std::endl;
   }
 }
@@ -23,7 +23,7 @@ void particle::move() {
   m_position.x += add.x;
   m_position.y += add.y;
 
-  gameWorld.adjustBoundaries( m_position );
+  config.adjustBoundaries( m_position );
 }
 
 void particle::render( SDL_Renderer *renderer ) {

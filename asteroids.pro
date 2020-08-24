@@ -16,6 +16,7 @@ SOURCES += \
         particle.cpp \
         rock.cpp \
         sdlEngine.cpp \
+        config.cpp \
         ship.cpp \
         tools.cpp \
         vector.cpp
@@ -23,7 +24,7 @@ SOURCES += \
 HEADERS += \
         base.h \
         force.h \
-        gameWorld.h \
+        config.h \
         laser.h \
         particle.h \
         rock.h \

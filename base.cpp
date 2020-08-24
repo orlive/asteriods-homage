@@ -9,7 +9,7 @@ bool base::isDestroyed() { return m_destroyed; }
 std::vector<POINT>& base::transformed() { return m_transformed; }
 
 bool base::deceased() {
-  return ( m_timeToDie!=0 && gameWorld.time.lastTicks > m_timeToDie );
+  return ( m_timeToDie!=0 && config.time.lastTicks > m_timeToDie );
 }
 
 void base::clearPolygon() {
@@ -22,8 +22,8 @@ void base::addToPolygon(POINT position) {
 
 void base::generatePosWidthMinDistance( int& x , int& y , int distance ) {
   for ( int i=0 ; i<100 ; i++ ) { // max. 100 tries
-    x = random(0,gameWorld.display.width);
-    y = random(0,gameWorld.display.height);
+    x = random(0,config.display.width);
+    y = random(0,config.display.height);
 
     int diffX = m_position.x - x;
     int diffY = m_position.y - y;
@@ -42,7 +42,7 @@ void base::drawObject( SDL_Renderer *renderer , std::vector<POINT>& xy , const i
       m_destroyedForces.at(i)->calcCombinedOffsets( destroyed );
       m_destroyedForces.at(i)->slowDown();
     }
-    if ( gameWorld.display.bold ) {
+    if ( config.display.bold ) {
       SDL_SetRenderDrawColor(renderer, 125,125,125, 100);
       SDL_RenderDrawLine(renderer , xy[i].x+offsetX+destroyed.x   , xy[i].y+offsetY+destroyed.y+1 , xy[i+1].x+offsetX+destroyed.x   , xy[i+1].y+offsetY+destroyed.y+1 );
       SDL_RenderDrawLine(renderer , xy[i].x+offsetX+destroyed.x+1 , xy[i].y+offsetY+destroyed.y+1 , xy[i+1].x+offsetX+destroyed.x+1 , xy[i+1].y+offsetY+destroyed.y+1 );
@@ -55,7 +55,7 @@ void base::drawObject( SDL_Renderer *renderer , std::vector<POINT>& xy , const i
     m_destroyedForces.at(s-1)->calcCombinedOffsets( destroyed );
     m_destroyedForces.at(s-1)->slowDown();
   }
-  if ( gameWorld.display.bold ) {
+  if ( config.display.bold ) {
     SDL_SetRenderDrawColor(renderer, 125,125,125, 100);
     SDL_RenderDrawLine(renderer , xy[s-1].x+offsetX+destroyed.x   , xy[s-1].y+offsetY+destroyed.y+1 , xy[0].x+offsetX+destroyed.x   , xy[0].y+offsetY+destroyed.y+1 );
     SDL_RenderDrawLine(renderer , xy[s-1].x+offsetX+destroyed.x+1 , xy[s-1].y+offsetY+destroyed.y+1 , xy[0].x+offsetX+destroyed.x+1 , xy[0].y+offsetY+destroyed.y+1 );
@@ -66,10 +66,10 @@ void base::drawObject( SDL_Renderer *renderer , std::vector<POINT>& xy , const i
 }
 
 void base::drawObjectWithMirrors( SDL_Renderer *renderer , std::vector<POINT>& xy ) {
-  if ( gameWorld.display.mirror ) {
+  if ( config.display.mirror ) {
     for ( int mX = -1 ; mX <= 1 ; mX++ ) {
       for ( int mY = -1 ; mY <= 1 ; mY++ ) {
-        drawObject( renderer,xy , gameWorld.display.width * mX , gameWorld.display.height * mY );
+        drawObject( renderer,xy , config.display.width * mX , config.display.height * mY );
       }
     }
   } else {
@@ -79,7 +79,7 @@ void base::drawObjectWithMirrors( SDL_Renderer *renderer , std::vector<POINT>& x
 
 void base::drawPoint( SDL_Renderer *renderer , int x , int y , int offsetX , int offsetY ) {
   SDL_RenderDrawPoint( renderer , x+offsetX   , y+offsetY   );
-  if ( gameWorld.display.bold ) {
+  if ( config.display.bold ) {
     SDL_RenderDrawPoint( renderer , x+offsetX+1 , y+offsetY   );
     SDL_RenderDrawPoint( renderer , x+offsetX   , y+offsetY+1 );
     SDL_RenderDrawPoint( renderer , x+offsetX+1 , y+offsetY+1 );
@@ -87,10 +87,10 @@ void base::drawPoint( SDL_Renderer *renderer , int x , int y , int offsetX , int
 }
 
 void base::drawPointWithMirror( SDL_Renderer *renderer , int x , int y ) {
-  if ( gameWorld.display.mirror ) {
+  if ( config.display.mirror ) {
     for ( int mX = -1 ; mX <= 1 ; mX++ ) {
       for ( int mY = -1 ; mY <= 1 ; mY++ ) {
-        drawPoint( renderer , x , y , gameWorld.display.width * mX , gameWorld.display.height * mY );
+        drawPoint( renderer , x , y , config.display.width * mX , config.display.height * mY );
       }
     }
   } else {
@@ -130,11 +130,11 @@ bool base::pointInPolygon( POINT position,std::vector<POINT>& xy , int offsetX ,
 }
 
 bool base::collision( std::vector<POINT>& polygon2 ) {
-  if ( gameWorld.display.mirror ) {
+  if ( config.display.mirror ) {
     for ( int mX=-1 ; mX<=1 ; mX++ ) {
       for ( int mY=-1 ; mY<=1 ; mY++ ) {
         for( std::size_t i=0 ; i<m_transformed.size() ; i++ ) {
-          if ( pointInPolygon( m_transformed[i] , polygon2 , gameWorld.display.width * mX,gameWorld.display.height * mY ) ) {
+          if ( pointInPolygon( m_transformed[i] , polygon2 , config.display.width * mX,config.display.height * mY ) ) {
             return true;
           }
         }

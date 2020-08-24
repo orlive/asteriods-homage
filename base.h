@@ -3,7 +3,7 @@
 
 #include "force.h"
 #include "sdlEngine.h"
-#include "gameWorld.h"
+#include "config.h"
 
 class base {
   protected:

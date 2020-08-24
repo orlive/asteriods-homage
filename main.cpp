@@ -1,6 +1,5 @@
 #include <memory>
-#define NOEXTERN
-#include "gameWorld.h"
+#include "config.h"
 #define NOEXTERN
 #include "tools.h"
 #include "sdlEngine.h"
@@ -17,9 +16,9 @@ struct /* LASERS */ {
 
   void newLaser(ship& aShip,sdlEngine& sdl) {
     static int waitTill;
-    if ( gameWorld.time.lastTicks > waitTill ) {
+    if ( config.time.lastTicks > waitTill ) {
       array.push_back( std::shared_ptr<laser>( new laser(aShip.x(),aShip.y(),aShip.getDegree()) ) );
-      waitTill = gameWorld.time.lastTicks + gameWorld.ship.laser_wait;
+      waitTill = config.time.lastTicks + config.ship.laser_wait;
       sdl.playSound(0);
       //SDL_FreeWAV(wav_buffer);
     }
@@ -87,31 +86,31 @@ struct /* routinen */ {
   }
 
   void drawGameOver( sdlEngine* engine ) {
-    engine->drawTexture( gameWorld.display.width / 2 - textGameOver.width*gameWorld.display.charWidth/2,
-                         gameWorld.display.height / 2 - gameWorld.display.charHeight/2,
-                         textGameOver.width*gameWorld.display.charWidth,
-                         gameWorld.display.charHeight,
+    engine->drawTexture( config.display.width / 2 - textGameOver.width*config.display.charWidth/2,
+                         config.display.height / 2 - config.display.charHeight/2,
+                         textGameOver.width*config.display.charWidth,
+                         config.display.charHeight,
                          textGameOver.texture );
   }
 
   void drawTexts( sdlEngine* engine ) {
-    engine->drawTexture(   1,1,textLevel.width*gameWorld.display.charWidth,gameWorld.display.charHeight,textLevel.texture );
-    engine->drawTexture( 250,1,textScore.width*gameWorld.display.charWidth,gameWorld.display.charHeight,textScore.texture );
-    engine->drawTexture( 500,1,textLives.width*gameWorld.display.charWidth,gameWorld.display.charHeight,textLives.texture );
+    engine->drawTexture(   1,1,textLevel.width*config.display.charWidth,config.display.charHeight,textLevel.texture );
+    engine->drawTexture( 250,1,textScore.width*config.display.charWidth,config.display.charHeight,textScore.texture );
+    engine->drawTexture( 500,1,textLives.width*config.display.charWidth,config.display.charHeight,textLives.texture );
   }
 
   void drawFPS( sdlEngine* engine ) {
     static int nextDraw;
 
-    if ( gameWorld.time.lastTicks > nextDraw ) {
-      nextDraw = gameWorld.time.lastTicks + 333;
+    if ( config.time.lastTicks > nextDraw ) {
+      nextDraw = config.time.lastTicks + 333;
       char txt[20];
       if ( textFPS.texture ) SDL_DestroyTexture( textFPS.texture );
-      sprintf( txt,"(%03d)",(int)(1000.0f/(float)gameWorld.time.elapsed) );
+      sprintf( txt,"(%03d)",(int)(1000.0f/(float)config.time.elapsed) );
       textFPS = { engine->genTexture( txt ) , 5 };
     }
     
-    engine->drawTexture( 740,1,textFPS.width*gameWorld.display.charWidth/3*2,gameWorld.display.charHeight/3*2,textFPS.texture );
+    engine->drawTexture( 740,1,textFPS.width*config.display.charWidth/3*2,config.display.charHeight/3*2,textFPS.texture );
   }
 
 } routinen;
@@ -134,7 +133,7 @@ bool game( sdlEngine& gameSDL ) {
   bool spacePressed = false;
 
   while ( true ) {
-    gameSDL.newLoop( gameWorld.time.elapsed,gameWorld.time.lastTicks,gameWorld.time.timeFactor );
+    gameSDL.newLoop( config.time.elapsed,config.time.lastTicks,config.time.timeFactor );
     gameSDL.newInput();
 
     const Uint8* state = gameSDL.state();
@@ -148,25 +147,29 @@ bool game( sdlEngine& gameSDL ) {
         }  
       }
     }
-    spacePressed = ( state[SDL_SCANCODE_SPACE] );
+    if ( config.ship.auto_fire ) {
+      spacePressed = false;
+    } else {
+      spacePressed = ( state[SDL_SCANCODE_SPACE] );
+    }
 
     if ( state[SDL_SCANCODE_RIGHT] ) aShip.rotateRight();
     if ( state[SDL_SCANCODE_LEFT]  ) aShip.rotateLeft();
     if ( state[SDL_SCANCODE_UP]    ) aShip.thrust(particles);
     if ( state[SDL_SCANCODE_R]     ) if ( aShip.isDestroyed() && lives<=0 ) return true;
 
-    if ( gameWorld.debug ) {
+    if ( config.debug ) {
       if ( state[SDL_SCANCODE_0] ) aShip.stop(); // TODO - entfernen, wenn fertig
-      if ( state[SDL_SCANCODE_F] ) gameWorld.toggleRockFreezed(); // TODO - entfernen, wenn fertig
-      if ( state[SDL_SCANCODE_M] ) gameWorld.toggleMirrorMode(); // TODO - entfernen, wenn fertig
-      if ( state[SDL_SCANCODE_B] ) gameWorld.toggleBoldMode(); // TODO - enfernen, wenn fertig
-      if ( state[SDL_SCANCODE_8] ) aShip.resize( ++gameWorld.ship.size );
-      if ( state[SDL_SCANCODE_9] ) aShip.resize( --gameWorld.ship.size );
-      if ( state[SDL_SCANCODE_1] ) printf( "(%05ld) FPS:%f\n",rocks.size(),1000.0f/gameWorld.time.elapsed );
+      if ( state[SDL_SCANCODE_F] ) config.toggleRockFreezed(); // TODO - entfernen, wenn fertig
+      if ( state[SDL_SCANCODE_M] ) config.toggleMirrorMode(); // TODO - entfernen, wenn fertig
+      if ( state[SDL_SCANCODE_B] ) config.toggleBoldMode(); // TODO - enfernen, wenn fertig
+      if ( state[SDL_SCANCODE_8] ) aShip.resize( ++config.ship.size );
+      if ( state[SDL_SCANCODE_9] ) aShip.resize( --config.ship.size );
+      if ( state[SDL_SCANCODE_1] ) printf( "(%05ld) FPS:%f\n",rocks.size(),1000.0f/config.time.elapsed );
       if ( state[SDL_SCANCODE_D] ) { static int wait; 
-                                     if ( lives>0 && gameWorld.time.lastTicks > wait) {
+                                     if ( lives>0 && config.time.lastTicks > wait) {
                                        routinen.genLives( &gameSDL , --lives ); 
-                                       wait=gameWorld.time.lastTicks+500; 
+                                       wait=config.time.lastTicks+500; 
                                      } 
                                    }
     }
@@ -247,6 +250,7 @@ bool game( sdlEngine& gameSDL ) {
           rocks.push_back( std::shared_ptr<rock>( new rock(rocks.at(i)->x(),rocks.at(i)->y(),newSize,rocks.at(i)->magnitude(),lasers.array.at(hitRockIndex)->degree() - 45 ) ) );
           rocks.push_back( std::shared_ptr<rock>( new rock(rocks.at(i)->x(),rocks.at(i)->y(),newSize,rocks.at(i)->magnitude(),lasers.array.at(hitRockIndex)->degree() + 45 ) ) );
         }
+        lasers.array.erase( lasers.array.begin() + hitRockIndex );
         rocks.erase( rocks.begin() + i );
         i--;
       } else {
@@ -272,14 +276,14 @@ bool game( sdlEngine& gameSDL ) {
     }
 
     SDL_RenderPresent(gameSDL.renderer());
-    SDL_Delay( gameWorld.game_delay );
+    SDL_Delay( config.game_delay );
   }
 
   return true;
 }
 
 int main( int argc,char *argv[] ) {
-  sdlEngine gameSDL( (char*) "Asteroids",gameWorld.display.width,gameWorld.display.height );
+  sdlEngine gameSDL( (char*) "Asteroids",config.display.width,config.display.height );
 
   std::vector<std::string> sounds = {
     "assets/sounds/344276__nsstudios__laser3.wav", // laser
@@ -290,9 +294,9 @@ int main( int argc,char *argv[] ) {
   };
   gameSDL.loadSounds( sounds );
 
-  gameWorld.processArguments(argc,argv);
+  config.processArguments(argc,argv);
 
-  if ( gameWorld.haveOption('2',argc,argv) ) {
+  if ( config.haveOption('2',argc,argv) ) {
     gameSDL.use2screen(); // falls 2 Monitore... zeige Programm auf dem rechten.. ;)
   }
 

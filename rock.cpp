@@ -16,7 +16,7 @@ rock::rock(int x,int y,float size,float speed,int degree) {
   m_position.x = x;
   m_position.y = y;
   m_size = size;
-  // m_timeToDie = gameWorld.time.lastTicks + gameWorld.rock.lifespan + random(0,gameWorld.rock.lifespan/10);
+  // m_timeToDie = config.time.lastTicks + config.rock.lifespan + random(0,config.rock.lifespan/10);
   m_timeToDie = 0;
 
   m_force        = std::shared_ptr<force>( new force(speed,20,degree) );
@@ -25,7 +25,7 @@ rock::rock(int x,int y,float size,float speed,int degree) {
 }
 
 rock::~rock() {
-  if ( gameWorld.debug ) {
+  if ( config.debug ) {
     std::cout << "delete rock" << std::endl;
   }
 }
@@ -41,13 +41,13 @@ float rock::degree() {
 void rock::move() {
   POINT add = { 0.0f , 0.0f };
 
-  if ( !gameWorld.rock.frezzed ) {
+  if ( !config.rock.frezzed ) {
     m_force->calcOffsets( add );
 
     m_position.x += add.x;
     m_position.y += add.y;
 
-    gameWorld.adjustBoundaries( m_position );
+    config.adjustBoundaries( m_position );
   }
 
   m_transformed.clear();

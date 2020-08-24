@@ -1,6 +1,6 @@
 #include <cmath>
 #include <vector>
-#include "gameWorld.h"
+#include "config.h"
 #include "tools.h"
 #include "force.h"
 
@@ -12,7 +12,7 @@ force::force( float magnitude , float randomPercentage , int degree ) {
 }
 
 force::~force() {
-  if ( gameWorld.debug ) {
+  if ( config.debug ) {
     std::cout << "delete force" << std::endl;
   }
 }
@@ -26,15 +26,15 @@ void force::calcCombinedOffsets( POINT& add ) {
 }
 
 void force::calcOffsets( POINT& add ) {
-  add.x = gameWorld.time.timeFactor * m_position.x;
-  add.y = gameWorld.time.timeFactor * m_position.y;
+  add.x = config.time.timeFactor * m_position.x;
+  add.y = config.time.timeFactor * m_position.y;
 }
 
 void force::slowDown() {
   float deg  = degree();
   float size = magnitude();
 
-  size -= ( gameWorld.time.timeFactor * size * gameWorld.ship.resistance );
+  size -= ( config.time.timeFactor * size * config.ship.resistance );
 
   if ( size < 0.05f ) {
     stop();

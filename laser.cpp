@@ -2,12 +2,12 @@
 #include "laser.h"
 
 laser::laser( float x,float y,float degree ) {
-  addToPolygon( { 0,-gameWorld.ship.size/2 } ); 
-  addToPolygon( { 0,-gameWorld.ship.size/2 - gameWorld.laser.size } );
+  addToPolygon( { 0,-config.ship.size/2 } ); 
+  addToPolygon( { 0,-config.ship.size/2 - config.laser.size } );
 
   m_position.x = x;
   m_position.y = y;
-  m_force.add(degree,gameWorld.laser.speed);
+  m_force.add(degree,config.laser.speed);
 
   float bm = bogenmass(degree);
 
@@ -16,11 +16,11 @@ laser::laser( float x,float y,float degree ) {
                                m_polygon[i].x*std::sin(bm) + m_polygon[i].y*std::cos(bm) + y } );
   }
 
-  m_timeToDie = gameWorld.time.lastTicks + gameWorld.laser.lifespan;
+  m_timeToDie = config.time.lastTicks + config.laser.lifespan;
 }
 
 laser::~laser() {
-  if ( gameWorld.debug ) {
+  if ( config.debug ) {
     std::cout << "delete laser" << std::endl;
   }
 }
@@ -39,7 +39,7 @@ void laser::render( SDL_Renderer *renderer ) {
   m_position.x += add.x;
   m_position.y += add.y;
 
-  gameWorld.adjustBoundaries( m_position );
+  config.adjustBoundaries( m_position );
 
   for ( std::size_t i=0 ; i<m_polygon.size() ; i++ ) {
     m_transformed[i].x = m_transformed[i].x - oldPosition.x + m_position.x;
