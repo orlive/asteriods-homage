@@ -28,6 +28,7 @@ app:
         cp -rp assets asteroids.app/Contents/Resources/; \
 	~/Qt5.14.1/5.14.1/clang_64/bin/macdeployqt asteroids.app; \
     	install_name_tool -change "@rpath/liblua53.dylib" "@executable_path/../Frameworks/liblua53.dylib" asteroids.app/Contents/MacOS/asteroids; \
+    	install_name_tool -change "liblua53.dylib" "@executable_path/../Frameworks/liblua53.dylib" asteroids.app/Contents/MacOS/asteroids; \
 	cp lua-5.3.5_MacOS1013_lib/liblua53.dylib asteroids.app/Contents/Frameworks/; \
 	otool -L asteroids.app/Contents/MacOS/asteroids; \
 	cp -frp asteroids.app /Applications/
